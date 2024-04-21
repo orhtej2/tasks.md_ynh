@@ -70,17 +70,17 @@ chown $app:$app "$install_dir/config"
 #=================================================
 ynh_script_progression --message="Installing app..." --weight=5
 
-pushd $install_dir/build
+pushd $install_dir/build/frontend
     ynh_exec_as $app $ynh_node_load_PATH $ynh_npm ci
     ynh_exec_as $app $ynh_node_load_PATH $ynh_npm run build
 popd
 
-mkdir -p $install_dir/frontend
+mkdir -p $install_dir/static
 
-mv $install_dir/build/dist/. $install_dir/static/
+mv $install_dir/build/frontedn/dist/. $install_dir/static/
 mv $install_dir/static/stylesheets $install_dir
 
-mv $install_dir/build/backend $install_dir
+mv $install_dir/build/backend $install_dir/api
 
 pushd $install_dir/api
     ynh_exec_as $app $ynh_node_load_PATH $ynh_npm ci
