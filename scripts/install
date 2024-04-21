@@ -26,7 +26,7 @@ ynh_use_nodejs
 #=================================================
 ynh_script_progression --message="Setting up source files..."
 
-ynh_setup_source --dest_dir="$install_dir"
+ynh_setup_source --dest_dir="$install_dir/build"
 
 chown -R $app:www-data "$install_dir"
 
@@ -38,13 +38,16 @@ ynh_script_progression --message="Adding system configurations related to $app..
 # Create a dedicated NGINX config using the conf/nginx.conf template
 ynh_add_nginx_config
 
-# Create a dedicated systemd config
-ynh_add_systemd_config
-
-yunohost service add $app --log="/var/log/$app/$app.log"
+mkdir -p /var/log/$app
+touch /var/log/$app/$app.log
+chown -R $app: /var/log/$app
 
 # Use logrotate to manage application logfile(s)
 ynh_use_logrotate
+
+# Create a dedicated systemd config
+ynh_add_systemd_config
+yunohost service add $app --log="/var/log/$app/$app.log"
 
 #=================================================
 # APP INITIAL CONFIGURATION
@@ -53,30 +56,35 @@ ynh_use_logrotate
 #=================================================
 ynh_script_progression --message="Adding app's configuration file..."
 
-ynh_add_config --template=".env" --destination="$install_dir/.env"
+mkdir -p $install_dir/config
+ynh_add_config --template=".env" --destination="$install_dir/config/.env"
 
 # FIXME: this should be handled by the core in the future
 # You may need to use chmod 600 instead of 400,
 # for example if the app is expected to be able to modify its own config
-chmod 400 "$install_dir/.env"
-chown $app:$app "$install_dir/.env"
+chmod 400 "$install_dir/config"
+chown $app:$app "$install_dir/config"
 
 #=================================================
 # INSTALL APP
 #=================================================
 ynh_script_progression --message="Installing app..." --weight=5
 
-pushd $install_dir
-ynh_exec_as $app $ynh_node_load_PATH $ynh_npm ci
-ynh_exec_as $app $ynh_node_load_PATH $ynh_npm run build
+pushd $install_dir/build
+    ynh_exec_as $app $ynh_node_load_PATH $ynh_npm ci
+    ynh_exec_as $app $ynh_node_load_PATH $ynh_npm run build
 popd
 
-#=================================================
-# FINALIZE APP INSTALL WITH CURL
-#=================================================
+mkdir -p $install_dir/frontend
 
-# REMOVEME? ynh_script_progression --message="Finalizing installation..."
-# REMOVEME? ynh_local_curl "/INSTALL_PATH" "key1=value1" "key2=value2" "key3=value3"
+mv $install_dir/build/dist/. $install_dir/static/
+mv $install_dir/static/stylesheets $install_dir
+
+mv $install_dir/build/backend $install_dir
+
+pushd $install_dir/api
+    ynh_exec_as $app $ynh_node_load_PATH $ynh_npm ci
+popd
 
 #=================================================
 # START SYSTEMD SERVICE

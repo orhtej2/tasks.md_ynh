@@ -7,10 +7,11 @@ Type=simple
 User=__APP__
 Group=__APP__
 
-EnvironmentFile=__INSTALL_DIR__/.env
+Environment="__YNH_NODE_LOAD_PATH__"
+EnvironmentFile=__INSTALL_DIR__/config/.env
 
 WorkingDirectory=__INSTALL_DIR__/
-ExecStart=$ynh_node api/server.js
+ExecStart=__YNH_NODE__ api/server.js
 StandardOutput=append:/var/log/__APP__/__APP__.log
 StandardError=inherit
 Restart=on-failure
